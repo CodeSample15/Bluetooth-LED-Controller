@@ -66,8 +66,8 @@ void Menu::render()
   //update target and current positions
   float deltatime = float(millis() - lastRender) / 1000;
 
-  currentBoxY += (targetBoxY - currentBoxY) * deltatime;
-  currentTextY += (targetTextY - currentTextY) * deltatime;
+  currentBoxY += (targetBoxY - currentBoxY) * deltatime * ANIM_SPEED;
+  currentTextY += (targetTextY - currentTextY) * deltatime * ANIM_SPEED;
 
   for(int i=0; i<menuSize; i++) {
     display.setCursor(2, currentTextY + (i * (TEXT_PIXEL_SIZE + MENU_BOX_BUFFER) + (MENU_BOX_BUFFER/2)));
@@ -117,5 +117,9 @@ void Menu::Down()  {
 }
 
 void Menu::In() {
+
+}
+
+void Menu::Out() {
 
 }

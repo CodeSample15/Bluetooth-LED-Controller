@@ -12,12 +12,15 @@
 
 #define NUM_MENU_ITEMS 4
 
+//for gyro control
+#define CONTROL_SENSITIVITY 300 //how far the gyro has to move for a input to be registered
+#define CONTROL_TIME 500 //how long in millis it should take for a gyro change (negative to positive or vice versa) to be registered. Any longer and the gyro movement will be considred random
+
 float yaw, pitch, roll;
 Menu screenMenu(NUM_MENU_ITEMS);
 
-//for keeping track of gyro control
-float gyro_lastX, gyro_lastY;
 int lastChangeX, lastChangeY; // last time in millis that the gyro reading went from positive to negative (only respond to quick rapid movements)
+bool positiveChangeX, positiveChangeY;
 
 void setup() {
   Serial.begin(9600);
@@ -103,20 +106,6 @@ void controlPeripheral(BLEDevice peripheral) {
   while(peripheral.connected()) {
     if(IMU.gyroscopeAvailable() && IMU.accelerationAvailable()) {
       IMU.readGyroscope(yaw, pitch, roll);
-
-      //only update values if they change significantly
-      if(abs(yaw-lastYaw) > 0.02) {
-        yawCharacteristic.writeValue((int16_t)trunc(yaw));
-        lastYaw = yaw;
-      }
-      if(abs(pitch-lastPitch) > 0.02) {
-        pitchCharacteristic.writeValue((int16_t)trunc(pitch));
-        lastPitch = pitch;
-      }
-      if(abs(roll-lastRoll) > 0.02) {
-        rollCharacteristic.writeValue((int16_t)trunc(roll));
-        lastRoll = roll;
-      }
     }
 
     connectedCharacteristic.writeValue((uint8_t)1);
@@ -125,7 +114,28 @@ void controlPeripheral(BLEDevice peripheral) {
     screenMenu.render();
 
     //handle the control of the menu via gyro
-    if(lastGyroX > 0);
+    switch(getGyroControlInput(yaw, pitch))
+    {
+      case 1:
+        Serial.println("Up");
+        screenMenu.Up();
+        break;
+      
+      case 2:
+        Serial.println("Down");
+        screenMenu.Down();
+        break;
+
+      case 3:
+        Serial.println("In");
+        screenMenu.In();
+        break;
+
+      case 4:
+        Serial.println("Out");
+        screenMenu.Out();
+        break;
+    }
   }
 
   Serial.println("Peripheral device disconnected!");
@@ -154,4 +164,35 @@ void init_menu() {
   screenMenu.menuItems[1].name = "Strip Color";
   screenMenu.menuItems[2].name = "Select Pattern";
   screenMenu.menuItems[3].name = "Gyro Control";
+}
+
+int getGyroControlInput(float x, float y) 
+{
+  int control = 0;
+
+  if(abs(x) >= CONTROL_SENSITIVITY) {
+    if(millis() - lastChangeX <= CONTROL_TIME) {
+      if(x > 0 && !positiveChangeX)
+        control = 1;
+      else if(x < 0 && positiveChangeX)
+        control = 2;
+    }
+
+    positiveChangeX = x > 0;
+    lastChangeX = millis();
+  }
+
+  if(abs(y) >= CONTROL_SENSITIVITY) {
+    if(millis() - lastChangeY <= CONTROL_TIME) {
+      if(y > 0 && !positiveChangeY)
+        control = 3;
+      else if(y < 0 && positiveChangeY)
+        control = 4;
+    }
+
+    positiveChangeY = y > 0;
+    lastChangeY = millis();
+  }
+
+  return control;
 }
