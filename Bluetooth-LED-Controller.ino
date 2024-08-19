@@ -2,13 +2,21 @@
 #include <Arduino_LSM6DS3.h> //imu
 #include "Menu.h"
 
+/*
+  Light modes:
+  0 - off
+  1 - static (set based off of raw, pitch, and roll characteristics)
+  2 - waves
+  3 - stars
+  4 - rainbow
+*/
+
 //Uuids
-#define deviceName "LukeRaspiZero"
 #define deviceServiceUuid "f6351508-a501-4022-acba-7232431a7fca"
 #define deviceServiceYawCharacteristicUuid "57ead45a-9ac2-4810-98c3-63191c97cece"
 #define deviceServicePitchCharacteristicUuid "0c712b41-f2ec-462d-b60e-5defdc405db2"
 #define deviceServiceRollCharacteristicUuid "c4b5dc3e-0bcd-4f34-93be-3afbabc6eed8"
-#define deviceServiceConnectedUuid "63b0a4f0-140e-4438-9be0-3d55441ee14f"
+#define deviceServiceModeCharacteristicUuid "4722c037-0957-4d33-b8a4-69378fd2ef9a"
 
 #define NUM_MENU_ITEMS 4
 
@@ -91,13 +99,13 @@ void controlPeripheral(BLEDevice peripheral) {
   BLECharacteristic yawCharacteristic = peripheral.characteristic(deviceServiceYawCharacteristicUuid);
   BLECharacteristic pitchCharacteristic = peripheral.characteristic(deviceServicePitchCharacteristicUuid);
   BLECharacteristic rollCharacteristic = peripheral.characteristic(deviceServiceRollCharacteristicUuid);
-  BLECharacteristic connectedCharacteristic = peripheral.characteristic(deviceServiceConnectedUuid);
+  BLECharacteristic modeCharacteristic = peripheral.characteristic(deviceServiceModeCharacteristicUuid);
 
   //check to make sure characteristics are discoverable (prevent errors later in the main loop)
   if(!CheckCharacteristic(yawCharacteristic, peripheral)) return;
   if(!CheckCharacteristic(pitchCharacteristic, peripheral)) return;
   if(!CheckCharacteristic(rollCharacteristic, peripheral)) return;
-  if(!CheckCharacteristic(connectedCharacteristic, peripheral)) return;
+  if(!CheckCharacteristic(modeCharacteristic, peripheral)) return;
 
   float lastYaw = 0;
   float lastPitch = 0;
@@ -108,8 +116,6 @@ void controlPeripheral(BLEDevice peripheral) {
       IMU.readGyroscope(yaw, pitch, roll);
     }
 
-    connectedCharacteristic.writeValue((uint8_t)1);
-    
     //handle the graphical side of things
     screenMenu.render();
 

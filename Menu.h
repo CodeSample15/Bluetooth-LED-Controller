@@ -17,7 +17,7 @@
 
 #define MAX_NAME_LENGTH 40
 
-#define ANIM_SPEED 10
+#define ANIM_SPEED 30
 
 typedef struct MenuItem {
     char* name;

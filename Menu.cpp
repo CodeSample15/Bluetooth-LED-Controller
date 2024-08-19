@@ -69,6 +69,8 @@ void Menu::render()
   currentBoxY += (targetBoxY - currentBoxY) * deltatime * ANIM_SPEED;
   currentTextY += (targetTextY - currentTextY) * deltatime * ANIM_SPEED;
 
+  //if(abs(targetBoxY - currentBoxY) > 0 && current)
+
   for(int i=0; i<menuSize; i++) {
     display.setCursor(2, currentTextY + (i * (TEXT_PIXEL_SIZE + MENU_BOX_BUFFER) + (MENU_BOX_BUFFER/2)));
     display.print(menuItems[i].name);
@@ -83,14 +85,14 @@ void Menu::render()
 void Menu::Up() {
   selectedItem--; //cuz down is up
 
-  if(selectedItem >= menuSize) {
-    selectedItem = menuSize-1;
+  if(selectedItem < 0) {
+    selectedItem = 0;
     return;
   }
 
   float newBoxPos = targetBoxY - (TEXT_PIXEL_SIZE - MENU_BOX_BUFFER);
 
-  if(newBoxPos < 0) {
+  if(newBoxPos < 0 && targetTextY < 0) {
     targetTextY += TEXT_PIXEL_SIZE - MENU_BOX_BUFFER;
   }
   else {
@@ -101,8 +103,8 @@ void Menu::Up() {
 void Menu::Down()  {
   selectedItem++; //cuz up is down
 
-  if(selectedItem < 0) {
-    selectedItem = 0;
+  if(selectedItem > menuSize) {
+    selectedItem = menuSize-1;
     return;
   }
 
