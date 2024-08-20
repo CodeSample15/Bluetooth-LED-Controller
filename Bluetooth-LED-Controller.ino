@@ -123,22 +123,18 @@ void controlPeripheral(BLEDevice peripheral) {
     switch(getGyroControlInput(yaw, pitch))
     {
       case 1:
-        Serial.println("Up");
         screenMenu.Up();
         break;
       
       case 2:
-        Serial.println("Down");
         screenMenu.Down();
         break;
 
       case 3:
-        Serial.println("In");
         screenMenu.In();
         break;
 
       case 4:
-        Serial.println("Out");
         screenMenu.Out();
         break;
     }

@@ -66,10 +66,29 @@ void Menu::render()
   //update target and current positions
   float deltatime = float(millis() - lastRender) / 1000;
 
-  currentBoxY += (targetBoxY - currentBoxY) * deltatime * ANIM_SPEED;
-  currentTextY += (targetTextY - currentTextY) * deltatime * ANIM_SPEED;
+  float boxChange = (targetBoxY - currentBoxY) * deltatime * ANIM_SPEED;
+  float textChange = (targetTextY - currentTextY) * deltatime * ANIM_SPEED;
 
-  //if(abs(targetBoxY - currentBoxY) > 0 && current)
+  //make sure the animation doesn't fall below a certain speed and just move the box into place when reaching a certain distance to prevent stutter
+  if(abs(targetBoxY - currentBoxY) > 0.4 && abs(boxChange) < BASE_ANIM_SPEED) {
+    boxChange = BASE_ANIM_SPEED * (boxChange < 0 ? -1 : 1);
+  }
+  else if(abs(boxChange) < BASE_ANIM_SPEED) {
+    boxChange = 0; //move the box into place
+    currentBoxY = targetBoxY;
+  }
+
+  //mirror of the box code above
+  if(abs(targetTextY - currentTextY) > 0.4 && abs(textChange) < BASE_ANIM_SPEED) {
+    textChange = BASE_ANIM_SPEED * (textChange < 0 ? -1 : 1);
+  }
+  else if(abs(textChange) < BASE_ANIM_SPEED) {
+    textChange = 0;
+    currentTextY = targetTextY;
+  }
+
+  currentBoxY += boxChange;
+  currentTextY += textChange;
 
   for(int i=0; i<menuSize; i++) {
     display.setCursor(2, currentTextY + (i * (TEXT_PIXEL_SIZE + MENU_BOX_BUFFER) + (MENU_BOX_BUFFER/2)));
@@ -90,10 +109,10 @@ void Menu::Up() {
     return;
   }
 
-  float newBoxPos = targetBoxY - (TEXT_PIXEL_SIZE - MENU_BOX_BUFFER);
+  float newBoxPos = targetBoxY - (TEXT_PIXEL_SIZE + MENU_BOX_BUFFER);
 
   if(newBoxPos < 0 && targetTextY < 0) {
-    targetTextY += TEXT_PIXEL_SIZE - MENU_BOX_BUFFER;
+    targetTextY += TEXT_PIXEL_SIZE + MENU_BOX_BUFFER;
   }
   else {
     targetBoxY = newBoxPos;
@@ -103,14 +122,14 @@ void Menu::Up() {
 void Menu::Down()  {
   selectedItem++; //cuz up is down
 
-  if(selectedItem > menuSize) {
-    selectedItem = menuSize-1;
+  if(selectedItem >= menuSize) {
+    selectedItem--;
     return;
   }
 
-  float newBoxPos = targetBoxY + (TEXT_PIXEL_SIZE - MENU_BOX_BUFFER);
+  float newBoxPos = targetBoxY + (TEXT_PIXEL_SIZE + MENU_BOX_BUFFER);
 
-  if(newBoxPos > SCREEN_HEIGHT - (TEXT_PIXEL_SIZE - MENU_BOX_BUFFER)) {
+  if(newBoxPos > SCREEN_HEIGHT - (TEXT_PIXEL_SIZE + MENU_BOX_BUFFER)) {
     targetTextY -= TEXT_PIXEL_SIZE - MENU_BOX_BUFFER;
   }
   else {
@@ -118,10 +137,10 @@ void Menu::Down()  {
   }
 }
 
-void Menu::In() {
-
+char* Menu::In() {
+ return 
 }
 
 void Menu::Out() {
-
+  
 }
