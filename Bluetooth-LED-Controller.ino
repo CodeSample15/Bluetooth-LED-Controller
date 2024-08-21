@@ -30,6 +30,8 @@ Menu screenMenu(NUM_MENU_ITEMS);
 int lastChangeX, lastChangeY; // last time in millis that the gyro reading went from positive to negative (only respond to quick rapid movements)
 bool positiveChangeX, positiveChangeY;
 
+char* currentScreen;
+
 void setup() {
   Serial.begin(9600);
 
@@ -45,6 +47,8 @@ void setup() {
 
   //init menu and display
   init_menu();
+
+  currentScreen = "";
 
   Serial.println("BLE module started...");
   BLE.setDeviceName("BluetoothLEDController");
@@ -119,24 +123,11 @@ void controlPeripheral(BLEDevice peripheral) {
     //handle the graphical side of things
     screenMenu.render();
 
-    //handle the control of the menu via gyro
-    switch(getGyroControlInput(yaw, pitch))
-    {
-      case 1:
-        screenMenu.Up();
-        break;
-      
-      case 2:
-        screenMenu.Down();
-        break;
-
-      case 3:
-        screenMenu.In();
-        break;
-
-      case 4:
-        screenMenu.Out();
-        break;
+    if(strcmp(currentScreen, "") == 0) {
+      controlMenu(yaw, pitch);
+    }
+    else {
+      controlPage(yaw, pitch); //to keep the messy code for all of the pages at the bottom of this file
     }
   }
 
@@ -197,4 +188,34 @@ int getGyroControlInput(float x, float y)
   }
 
   return control;
+}
+
+void controlMenu(float yaw, float pitch) {
+  //handle the control of the menu via gyro
+    switch(getGyroControlInput(yaw, pitch))
+    {
+      case 1:
+        screenMenu.Up();
+        break;
+      
+      case 2:
+        screenMenu.Down();
+        break;
+
+      case 3:
+        currentScreen = currentscreenMenu.In();
+        break;
+
+      case 4:
+        screenMenu.Out();
+        break;
+    }
+}
+
+void controlPage(float yaw, float pitch) {
+  int control = getGyroControlInput(yaw, pitch);
+
+  if(strcmp(currentPage, "Off")) {
+    
+  }
 }

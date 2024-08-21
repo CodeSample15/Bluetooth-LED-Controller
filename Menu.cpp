@@ -138,9 +138,9 @@ void Menu::Down()  {
 }
 
 char* Menu::In() {
- return 
+ return menuItems[selectedItem]; //change to return a blank string when entering a submenu (don't feel like programming submenus right now)
 }
 
 void Menu::Out() {
-  
+  //will implement at a later time
 }
