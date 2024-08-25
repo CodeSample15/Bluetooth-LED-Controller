@@ -28,24 +28,24 @@
 #define deviceServiceRollCharacteristicUuid "c4b5dc3e-0bcd-4f34-93be-3afbabc6eed8"
 #define deviceServiceModeCharacteristicUuid "4722c037-0957-4d33-b8a4-69378fd2ef9a"
 
-#define NUM_MAIN_MENU_ITEMS 4
+#define NUM_MAIN_MENU_ITEMS 3
 
 //for gyro control
-#define CONTROL_SENSITIVITY 300 //how far the gyro has to move for a input to be registered
+#define CONTROL_SENSITIVITY_Y 100 //how far the gyro has to move for a input to be registered
+#define CONTROL_SENSITIVITY_X 200
 #define CONTROL_TIME 500 //how long in millis it should take for a gyro change (negative to positive or vice versa) to be registered. Any longer and the gyro movement will be considred random
 
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 
 float yaw, pitch, roll;
-float ax, ay, az; //accelerometer 
 Menu mainMenu(NUM_MAIN_MENU_ITEMS, &display);
-//Menu colorMenu(3, &display);
-//Menu patternMenu(4, &display);
+Menu patternMenu(4, &display);
 
 int lastChangeX, lastChangeY, lastChangeA; // last time in millis that the gyro reading went from positive to negative (only respond to quick rapid movements)
 bool positiveChangeX, positiveChangeY, positiveChangeA; //A is for for accelerometer readings
 
 char currentScreen[MAX_NAME_LENGTH];
+char currentPattern[MAX_NAME_LENGTH];
 
 void setup() {
   Serial.begin(9600);
@@ -144,15 +144,13 @@ void controlPeripheral(BLEDevice peripheral) {
   while(peripheral.connected()) {
     if(IMU.gyroscopeAvailable() && IMU.accelerationAvailable()) {
       IMU.readGyroscope(yaw, pitch, roll);
-      IMU.readAcceleration(ax, ay, az);
     }
-    Serial.println(ax);
 
     if(strcmp(currentScreen, "") == 0) {
-      controlMenu(yaw, pitch, ax);
+      controlMenu(yaw, pitch);
     }
     else {
-      controlPage(yaw, pitch, ax, yawCharacteristic, pitchCharacteristic, rollCharacteristic, modeCharacteristic); //to keep the messy code for all of the pages at the bottom of this file
+      controlPage(yaw, pitch, yawCharacteristic, pitchCharacteristic, rollCharacteristic, modeCharacteristic); //to keep the messy code for all of the pages at the bottom of this file
     }
   }
 
@@ -181,16 +179,20 @@ void init_menus() {
   strcpy(mainMenu.menuItems[0].name, "Off");
   strcpy(mainMenu.menuItems[1].name, "Strip Color");
   strcpy(mainMenu.menuItems[2].name, "Select Pattern");
-  strcpy(mainMenu.menuItems[3].name, "Gyro Control");
 
+  patternMenu.init_menu();
 
+  strcpy(patternMenu.menuItems[0].name, "Off");
+  strcpy(patternMenu.menuItems[1].name, "Waves");
+  strcpy(patternMenu.menuItems[2].name, "Stars");
+  strcpy(patternMenu.menuItems[3].name, "Rainbow");
 }
 
-int getGyroControlInput(float x, float y, float a) 
+int getGyroControlInput(float x, float y) 
 {
   int control = 0;
 
-  if(abs(x) >= CONTROL_SENSITIVITY) {
+  if(abs(x) >= CONTROL_SENSITIVITY_X) {
     if(millis() - lastChangeX <= CONTROL_TIME) {
       if(x > 0 && !positiveChangeX)
         control = 1;
@@ -202,7 +204,7 @@ int getGyroControlInput(float x, float y, float a)
     lastChangeX = millis();
   }
 
-  if(abs(y) >= CONTROL_SENSITIVITY) {
+  if(abs(y) >= CONTROL_SENSITIVITY_Y) {
     if(millis() - lastChangeY <= CONTROL_TIME) {
       if(y > 0 && !positiveChangeY)
         control = 3;
@@ -214,54 +216,73 @@ int getGyroControlInput(float x, float y, float a)
     lastChangeY = millis();
   }
 
-  if(abs(a) >= CONTROL_SENSITIVITY) {
-    if(millis() - lastChangeA <= CONTROL_TIME) {
-      if(a > 0 && !positiveChangeA)
-        control = 5;
-      else if(a < 0 && positiveChangeA)
-        control = 6;
-    }
-
-    positiveChangeA = a > 0;
-    lastChangeA = millis();
-  }
-
   return control;
 }
 
-void controlMenu(float yaw, float pitch, float a) {
+void controlMenu(float yaw, float pitch) {
   //handle the graphical side of things
   mainMenu.render();
 
   //handle the control of the menu via gyro
-    switch(getGyroControlInput(yaw, pitch, a))
-    {
-      case 1:
-        mainMenu.Up();
-        break;
-      
-      case 2:
-        mainMenu.Down();
-        break;
+  switch(getGyroControlInput(yaw, pitch))
+  {
+    case 1:
+      mainMenu.Up();
+      break;
+    
+    case 2:
+      mainMenu.Down();
+      break;
 
-      case 3:
-        strcpy(currentScreen, mainMenu.In());
-        break;
+    case 3:
+      strcpy(currentScreen, mainMenu.In());
+      break;
 
-      case 4:
-        mainMenu.Out();
-        break;
-    }
+    case 4:
+      mainMenu.Out();
+      break;
+  }
 }
 
-void controlPage(float yaw, float pitch, float a, BLECharacteristic yawChar, BLECharacteristic pitchChar, BLECharacteristic rollChar, BLECharacteristic modeChar) {
-  int control = getGyroControlInput(yaw, pitch, a);
+void controlPage(float yaw, float pitch, BLECharacteristic yawChar, BLECharacteristic pitchChar, BLECharacteristic rollChar, BLECharacteristic modeChar) {
+  int control = getGyroControlInput(yaw, pitch);
 
   if(strcmp(currentScreen, "Off") == 0) {
     modeChar.writeValue((int8_t)0);
     strcpy(currentScreen, "");
   }
-  else if(strcmp(currentScreen, "Strip Color")) {
+  else if(strcmp(currentScreen, "Strip Color") == 0) {
+    strcpy(currentScreen, ""); //not implemented yet
+  }
+  else if(strcmp(currentScreen, "Select Pattern") == 0) {
+    patternMenu.render();
 
+    switch(control)
+    {
+      case 1:
+        patternMenu.Up();
+        break;
+      
+      case 2:
+        patternMenu.Down();
+        break;
+
+      case 3:
+        strcpy(currentPattern, patternMenu.In());
+        //update the bluetooth server
+        if(strcmp(currentPattern, "Off") == 0)
+          modeChar.writeValue((int8_t)0);
+        else if(strcmp(currentPattern, "Waves") == 0)
+          modeChar.writeValue((int8_t)2);
+        else if(strcmp(currentPattern, "Stars") == 0)
+          modeChar.writeValue((int8_t)3);
+        else if(strcmp(currentPattern, "Rainbow") == 0)
+          modeChar.writeValue((int8_t)4);
+        break;
+
+      case 4:
+        strcpy(currentScreen, ""); //exit to main screen
+        break;
+    }
   }
 }
