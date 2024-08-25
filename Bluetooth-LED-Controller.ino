@@ -30,6 +30,9 @@
 
 #define NUM_MAIN_MENU_ITEMS 3
 
+#define SLEEP_TIME_MILLIS 15000 //time until the device goes to sleep and turns off the screen
+#define SLEEP_GYRO_MAX 2 //threshold gyro readings need to pass until the device is turned back on
+
 //for gyro control
 #define CONTROL_SENSITIVITY_Y 100 //how far the gyro has to move for a input to be registered
 #define CONTROL_SENSITIVITY_X 200
@@ -43,6 +46,9 @@ Menu patternMenu(4, &display);
 
 int lastChangeX, lastChangeY, lastChangeA; // last time in millis that the gyro reading went from positive to negative (only respond to quick rapid movements)
 bool positiveChangeX, positiveChangeY, positiveChangeA; //A is for for accelerometer readings
+
+long lastGyroMoveMillis;
+bool awake;
 
 char currentScreen[MAX_NAME_LENGTH];
 char currentPattern[MAX_NAME_LENGTH];
@@ -140,17 +146,33 @@ void controlPeripheral(BLEDevice peripheral) {
   if(!CheckCharacteristic(rollCharacteristic, peripheral)) return;
   if(!CheckCharacteristic(modeCharacteristic, peripheral)) return;
 
+  awake = true;
 
   while(peripheral.connected()) {
     if(IMU.gyroscopeAvailable() && IMU.accelerationAvailable()) {
       IMU.readGyroscope(yaw, pitch, roll);
+
+      if(yaw >= SLEEP_GYRO_MAX || pitch >= SLEEP_GYRO_MAX || roll >= SLEEP_GYRO_MAX) {
+        lastGyroMoveMillis = millis();
+        awake = true;
+      }
+      else if(millis() - lastGyroMoveMillis > SLEEP_TIME_MILLIS) {
+        awake = false; //nighty night
+      }
     }
 
-    if(strcmp(currentScreen, "") == 0) {
-      controlMenu(yaw, pitch);
+    if(awake) {
+      if(strcmp(currentScreen, "") == 0) {
+        controlMenu(yaw, pitch);
+      }
+      else {
+        controlPage(yaw, pitch, yawCharacteristic, pitchCharacteristic, rollCharacteristic, modeCharacteristic); //to keep the messy code for all of the pages at the bottom of this file
+      }
     }
     else {
-      controlPage(yaw, pitch, yawCharacteristic, pitchCharacteristic, rollCharacteristic, modeCharacteristic); //to keep the messy code for all of the pages at the bottom of this file
+      //go to sleep
+      display.clearDisplay();
+      display.display();
     }
   }
 
