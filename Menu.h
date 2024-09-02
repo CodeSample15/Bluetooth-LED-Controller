@@ -37,6 +37,8 @@ class Menu  {
 
     void render();
 
+    int SelectedItemIndex();
+    
     char currentScreen[MAX_NAME_LENGTH];
     MenuItem* menuItems;
     Adafruit_SSD1306* display;

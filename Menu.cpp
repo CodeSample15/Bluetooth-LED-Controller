@@ -94,6 +94,10 @@ void Menu::render()
   lastRender = millis(); //update so that animations can be properly timed
 }
 
+int Menu::SelectedItemIndex() {
+  return selectedItem;
+}
+
 void Menu::Up() {
   selectedItem--; //cuz down is up
 

@@ -31,7 +31,7 @@
 #define NUM_MAIN_MENU_ITEMS 3
 
 #define SLEEP_TIME_MILLIS 15000 //time until the device goes to sleep and turns off the screen
-#define SLEEP_GYRO_MAX 2 //threshold gyro readings need to pass until the device is turned back on
+#define SLEEP_GYRO_MAX 10 //threshold gyro readings need to pass until the device is turned back on
 
 //for gyro control
 #define CONTROL_SENSITIVITY_Y 100 //how far the gyro has to move for a input to be registered
@@ -43,6 +43,7 @@ Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 float yaw, pitch, roll;
 Menu mainMenu(NUM_MAIN_MENU_ITEMS, &display);
 Menu patternMenu(4, &display);
+Menu colorMenu(8, &display);
 
 int lastChangeX, lastChangeY, lastChangeA; // last time in millis that the gyro reading went from positive to negative (only respond to quick rapid movements)
 bool positiveChangeX, positiveChangeY, positiveChangeA; //A is for for accelerometer readings
@@ -52,6 +53,7 @@ bool awake;
 
 char currentScreen[MAX_NAME_LENGTH];
 char currentPattern[MAX_NAME_LENGTH];
+char currentColor[MAX_NAME_LENGTH];
 
 void setup() {
   Serial.begin(9600);
@@ -198,16 +200,27 @@ void init_menus() {
   //number of menu items MUST be the same as NUM_MAIN_MENU_ITEMS
   mainMenu.init_menu();
 
-  strcpy(mainMenu.menuItems[0].name, "Off");
-  strcpy(mainMenu.menuItems[1].name, "Strip Color");
-  strcpy(mainMenu.menuItems[2].name, "Select Pattern");
+  mainMenu.updateItemName(0, "Select Pattern");
+  mainMenu.updateItemName(1, "Strip Color");
+  mainMenu.updateItemName(2, "Off");
 
   patternMenu.init_menu();
 
-  strcpy(patternMenu.menuItems[0].name, "Off");
-  strcpy(patternMenu.menuItems[1].name, "Waves");
-  strcpy(patternMenu.menuItems[2].name, "Stars");
-  strcpy(patternMenu.menuItems[3].name, "Rainbow");
+  patternMenu.updateItemName(0, "Off");
+  patternMenu.updateItemName(1, "Waves");
+  patternMenu.updateItemName(2, "Stars");
+  patternMenu.updateItemName(3, "Rainbow");
+
+  colorMenu.init_menu();
+
+  colorMenu.updateItemName(0, "White");
+  colorMenu.updateItemName(1, "Red");
+  colorMenu.updateItemName(2, "Green");
+  colorMenu.updateItemName(3, "Blue");
+  colorMenu.updateItemName(4, "Yellow");
+  colorMenu.updateItemName(5, "Pink");
+  colorMenu.updateItemName(6, "Cyan");
+  colorMenu.updateItemName(7, "Dark Blue");
 }
 
 int getGyroControlInput(float x, float y) 
@@ -274,7 +287,88 @@ void controlPage(float yaw, float pitch, BLECharacteristic yawChar, BLECharacter
     strcpy(currentScreen, "");
   }
   else if(strcmp(currentScreen, "Strip Color") == 0) {
-    strcpy(currentScreen, ""); //not implemented yet
+    strcpy(currentScreen, ""); //the main code on the raspi is fucking broken for this mode >:(
+
+    colorMenu.render();
+
+    int8_t r = 0;
+    int8_t g = 0;
+    int8_t b = 0;
+
+    switch(control) 
+    {
+      case 1:
+        colorMenu.Up();
+        break;
+      
+      case 2:
+        colorMenu.Down();
+        break;
+
+      case 3:
+        strcpy(currentColor, colorMenu.In());
+        modeChar.writeValue((int8_t)1); //tell the device it's in static color mode
+
+        switch(colorMenu.SelectedItemIndex())
+        {
+          case 0:
+            r = 255;
+            g = 255;
+            b = 255;
+            break; //white
+
+          case 1:
+            r = 255;
+            g = 0;
+            b = 0;
+            break; //red
+
+          case 2:
+            r = 0;
+            g = 255;
+            b = 0;
+            break; //green
+
+          case 3:
+            r = 0;
+            g = 0;
+            b = 255;
+            break; //blue
+
+          case 4:
+            r = 250;
+            g = 180;
+            b = 0;
+            break; //yellow
+
+          case 5:
+            r = 255;
+            g = 0;
+            b = 255;
+            break; //pink
+
+          case 6:
+            r = 0;
+            g = 150;
+            b = 170;
+            break; //cyan
+
+          case 7:
+            r = 0;
+            g = 10;
+            b = 120;
+            break; //dark blue
+        }
+
+        yawChar.writeValue(r);
+        pitchChar.writeValue(g);
+        rollChar.writeValue(b);
+        break;
+
+      case 4:
+        strcpy(currentScreen, ""); //exit to main screen
+        break;
+    }
   }
   else if(strcmp(currentScreen, "Select Pattern") == 0) {
     patternMenu.render();
