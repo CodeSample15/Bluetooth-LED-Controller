@@ -291,9 +291,9 @@ void controlPage(float yaw, float pitch, BLECharacteristic yawChar, BLECharacter
 
     colorMenu.render();
 
-    int8_t r = 0;
-    int8_t g = 0;
-    int8_t b = 0;
+    int16_t r = 0;
+    int16_t g = 0;
+    int16_t b = 0;
 
     switch(control) 
     {
@@ -307,8 +307,6 @@ void controlPage(float yaw, float pitch, BLECharacteristic yawChar, BLECharacter
 
       case 3:
         strcpy(currentColor, colorMenu.In());
-        modeChar.writeValue((int8_t)1); //tell the device it's in static color mode
-
         switch(colorMenu.SelectedItemIndex())
         {
           case 0:
@@ -358,11 +356,19 @@ void controlPage(float yaw, float pitch, BLECharacteristic yawChar, BLECharacter
             g = 10;
             b = 120;
             break; //dark blue
+
+          default:
+            r = 0;
+            g = 0;
+            b = 0;
+            break; //just in case I missed something
         }
 
         yawChar.writeValue(r);
         pitchChar.writeValue(g);
         rollChar.writeValue(b);
+
+        modeChar.writeValue((int8_t)1); //tell the device it's in static color mode
         break;
 
       case 4:
