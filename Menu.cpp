@@ -127,7 +127,7 @@ void Menu::Down()  {
   float newBoxPos = targetBoxY + (TEXT_PIXEL_SIZE + MENU_BOX_BUFFER);
 
   if(newBoxPos > SCREEN_HEIGHT - (TEXT_PIXEL_SIZE + MENU_BOX_BUFFER)) {
-    targetTextY -= TEXT_PIXEL_SIZE - MENU_BOX_BUFFER;
+    targetTextY -= TEXT_PIXEL_SIZE + MENU_BOX_BUFFER;
   }
   else {
     targetBoxY = newBoxPos;
