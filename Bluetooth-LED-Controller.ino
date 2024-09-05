@@ -287,8 +287,6 @@ void controlPage(float yaw, float pitch, BLECharacteristic yawChar, BLECharacter
     strcpy(currentScreen, "");
   }
   else if(strcmp(currentScreen, "Strip Color") == 0) {
-    strcpy(currentScreen, ""); //the main code on the raspi is fucking broken for this mode >:(
-
     colorMenu.render();
 
     int16_t r = 0;
