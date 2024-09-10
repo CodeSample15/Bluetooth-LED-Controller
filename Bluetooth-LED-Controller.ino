@@ -36,7 +36,7 @@
 //for gyro control
 #define CONTROL_SENSITIVITY_Y 100 //how far the gyro has to move for a input to be registered
 #define CONTROL_SENSITIVITY_X 200
-#define CONTROL_TIME 500 //how long in millis it should take for a gyro change (negative to positive or vice versa) to be registered. Any longer and the gyro movement will be considred random
+#define CONTROL_TIME 100 //how long in millis it should take for a gyro change (negative to positive or vice versa) to be registered. Any longer and the gyro movement will be considred random
 
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 
@@ -236,7 +236,8 @@ int getGyroControlInput(float x, float y)
     }
 
     positiveChangeX = x > 0;
-    lastChangeX = millis();
+    if(control == 0) //prevents misinterpreted commands
+      lastChangeX = millis();
   }
 
   if(abs(y) >= CONTROL_SENSITIVITY_Y) {
@@ -248,7 +249,8 @@ int getGyroControlInput(float x, float y)
     }
 
     positiveChangeY = y > 0;
-    lastChangeY = millis();
+    if(control == 0)
+      lastChangeY = millis();
   }
 
   return control;
