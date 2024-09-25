@@ -20,10 +20,12 @@ void Menu::init_menu() {
   targetBoxY = 0;
   targetTextY = 0;
 
+  //for the connection... screen: keeps track of when the last '.' was added to the screen so there's a bit of an animation
   lastDotMillis = millis();
 }
 
 void Menu::updateConnectionScreen() {
+  //does the connecting... animation by adding a '.' to the string connecting every 500 ms 
   display->clearDisplay();
 
   display->setTextSize(2);
@@ -35,7 +37,7 @@ void Menu::updateConnectionScreen() {
 
   display->display();
 
-  if(millis() - lastDotMillis > 500) {
+  if(millis() - lastDotMillis > 500) { //500ms delay
     lastDotMillis = millis();
     currentDotNum++;
     if(currentDotNum >= 4) {
@@ -45,9 +47,9 @@ void Menu::updateConnectionScreen() {
 }
 
 void Menu::updateItemName(int index, char newName[MAX_NAME_LENGTH]) {
-  if(index < 0 || index >= menuSize) return;
+  if(index < 0 || index >= menuSize) return; //simple guard to make sure programmer didn't screw up
 
-  strcpy(menuItems[index].name, newName);;
+  strcpy(menuItems[index].name, newName); //really simple reassignment of the string
 }
 
 void Menu::render() 
@@ -57,8 +59,9 @@ void Menu::render()
   display->setTextSize(1);
 
   //update target and current positions
-  float deltatime = float(millis() - lastRender) / 1000;
+  float deltatime = float(millis() - lastRender) / 1000; //time elapsed between frames to keep animations smoother and not reliant on screen refresh rate
 
+  //proportionally update the positions based off of how far they are from their destinations
   float boxChange = (targetBoxY - currentBoxY) * deltatime * ANIM_SPEED;
   float textChange = (targetTextY - currentTextY) * deltatime * ANIM_SPEED;
 
@@ -71,7 +74,7 @@ void Menu::render()
     currentBoxY = targetBoxY;
   }
 
-  //mirror of the box code above
+  //mirror of the box code above, bur for the text (text moves when the box is about to move off screen)
   if(abs(targetTextY - currentTextY) > 0.4 && abs(textChange) < BASE_ANIM_SPEED) {
     textChange = BASE_ANIM_SPEED * (textChange < 0 ? -1 : 1);
   }
@@ -80,14 +83,17 @@ void Menu::render()
     currentTextY = targetTextY;
   }
 
+  //update the actual positions
   currentBoxY += boxChange;
   currentTextY += textChange;
 
+  //print the text of the different menu items to the screen at the animated position
   for(int i=0; i<menuSize; i++) {
     display->setCursor(2, currentTextY + (i * (TEXT_PIXEL_SIZE + MENU_BOX_BUFFER) + (MENU_BOX_BUFFER/2)));
     display->print(menuItems[i].name);
   }
 
+  //draw the selection rectangle at its animated position
   display->drawRect(0, (int16_t)currentBoxY - (MENU_BOX_BUFFER/2) + (MENU_BOX_BUFFER/2), SCREEN_WIDTH, TEXT_PIXEL_SIZE + MENU_BOX_BUFFER, SSD1306_WHITE);
 
   display->display();
@@ -95,7 +101,7 @@ void Menu::render()
 }
 
 int Menu::SelectedItemIndex() {
-  return selectedItem;
+  return selectedItem; 
 }
 
 void Menu::Up() {
@@ -106,8 +112,10 @@ void Menu::Up() {
     return;
   }
 
+  //calculate new position based off of the size of the box (size of the text plus a buffer)
   float newBoxPos = targetBoxY - (TEXT_PIXEL_SIZE + MENU_BOX_BUFFER);
 
+  //if the box is about to go off screen, change the position of the text instead
   if(newBoxPos < 0 && targetTextY < 0) {
     targetTextY += TEXT_PIXEL_SIZE + MENU_BOX_BUFFER;
   }
@@ -139,5 +147,5 @@ char* Menu::In() {
 }
 
 void Menu::Out() {
-  //will implement at a later time
+  //will implement at a later time (useful for submenus)
 }
