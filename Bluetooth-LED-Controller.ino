@@ -23,9 +23,9 @@
 
 //Uuids
 #define deviceServiceUuid "f6351508-a501-4022-acba-7232431a7fca"
-#define deviceServiceYawCharacteristicUuid "57ead45a-9ac2-4810-98c3-63191c97cece"
-#define deviceServicePitchCharacteristicUuid "0c712b41-f2ec-462d-b60e-5defdc405db2"
-#define deviceServiceRollCharacteristicUuid "c4b5dc3e-0bcd-4f34-93be-3afbabc6eed8"
+#define deviceServiceRCharacteristicUuid "57ead45a-9ac2-4810-98c3-63191c97cece"
+#define deviceServiceGCharacteristicUuid "0c712b41-f2ec-462d-b60e-5defdc405db2"
+#define deviceServiceBCharacteristicUuid "c4b5dc3e-0bcd-4f34-93be-3afbabc6eed8"
 #define deviceServiceModeCharacteristicUuid "4722c037-0957-4d33-b8a4-69378fd2ef9a"
 
 #define NUM_MAIN_MENU_ITEMS 3
@@ -53,7 +53,6 @@ bool awake;
 
 char currentScreen[MAX_NAME_LENGTH];
 char currentPattern[MAX_NAME_LENGTH];
-char currentColor[MAX_NAME_LENGTH];
 
 void setup() {
   Serial.begin(9600);
@@ -137,18 +136,18 @@ void controlPeripheral(BLEDevice peripheral) {
     return;
   }
 
-  BLECharacteristic yawCharacteristic = peripheral.characteristic(deviceServiceYawCharacteristicUuid);
-  BLECharacteristic pitchCharacteristic = peripheral.characteristic(deviceServicePitchCharacteristicUuid);
-  BLECharacteristic rollCharacteristic = peripheral.characteristic(deviceServiceRollCharacteristicUuid);
+  BLECharacteristic rCharacteristic = peripheral.characteristic(deviceServiceRCharacteristicUuid);
+  BLECharacteristic gCharacteristic = peripheral.characteristic(deviceServiceGCharacteristicUuid);
+  BLECharacteristic bCharacteristic = peripheral.characteristic(deviceServiceBCharacteristicUuid);
   BLECharacteristic modeCharacteristic = peripheral.characteristic(deviceServiceModeCharacteristicUuid);
 
   //check to make sure characteristics are discoverable (prevent errors later in the main loop)
-  if(!CheckCharacteristic(yawCharacteristic, peripheral)) return;
-  if(!CheckCharacteristic(pitchCharacteristic, peripheral)) return;
-  if(!CheckCharacteristic(rollCharacteristic, peripheral)) return;
+  if(!CheckCharacteristic(rCharacteristic, peripheral)) return;
+  if(!CheckCharacteristic(gCharacteristic, peripheral)) return;
+  if(!CheckCharacteristic(bCharacteristic, peripheral)) return;
   if(!CheckCharacteristic(modeCharacteristic, peripheral)) return;
 
-  awake = true;
+  awake = true; //screen is not turned off
 
   while(peripheral.connected()) {
     if(IMU.gyroscopeAvailable() && IMU.accelerationAvailable()) {
@@ -156,10 +155,10 @@ void controlPeripheral(BLEDevice peripheral) {
 
       if(yaw >= SLEEP_GYRO_MAX || pitch >= SLEEP_GYRO_MAX || roll >= SLEEP_GYRO_MAX) {
         lastGyroMoveMillis = millis();
-        awake = true;
+        awake = true; //arduino moved, screen is back on
       }
       else if(millis() - lastGyroMoveMillis > SLEEP_TIME_MILLIS) {
-        awake = false; //nighty night
+        awake = false; //nighty night: user hasn't moved arduino in some time, turn off screen
       }
     }
 
@@ -168,7 +167,7 @@ void controlPeripheral(BLEDevice peripheral) {
         controlMenu(yaw, pitch);
       }
       else {
-        controlPage(yaw, pitch, yawCharacteristic, pitchCharacteristic, rollCharacteristic, modeCharacteristic); //to keep the messy code for all of the pages at the bottom of this file
+        controlPage(yaw, pitch, rCharacteristic, gCharacteristic, bCharacteristic, modeCharacteristic); //to keep the messy code for all of the pages at the bottom of this file
       }
     }
     else {
@@ -281,7 +280,7 @@ void controlMenu(float yaw, float pitch) {
   }
 }
 
-void controlPage(float yaw, float pitch, BLECharacteristic yawChar, BLECharacteristic pitchChar, BLECharacteristic rollChar, BLECharacteristic modeChar) {
+void controlPage(float yaw, float pitch, BLECharacteristic rChar, BLECharacteristic gChar, BLECharacteristic bChar, BLECharacteristic modeChar) {
   int control = getGyroControlInput(yaw, pitch);
 
   if(strcmp(currentScreen, "Off") == 0) {
@@ -306,7 +305,6 @@ void controlPage(float yaw, float pitch, BLECharacteristic yawChar, BLECharacter
         break;
 
       case 3:
-        strcpy(currentColor, colorMenu.In());
         switch(colorMenu.SelectedItemIndex())
         {
           case 0:
@@ -364,9 +362,9 @@ void controlPage(float yaw, float pitch, BLECharacteristic yawChar, BLECharacter
             break; //just in case I missed something
         }
 
-        yawChar.writeValue(r);
-        pitchChar.writeValue(g);
-        rollChar.writeValue(b);
+        rChar.writeValue(r);
+        gChar.writeValue(g);
+        bChar.writeValue(b);
 
         modeChar.writeValue((int8_t)1); //tell the device it's in static color mode
         break;
